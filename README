@@ -1,0 +1,36 @@
+This program takes as input a low-resolution electronic density map
+(e.g. from electron microscopy) for a protein and a structure of the
+same protein in some other conformation. It then deforms the conformation
+to fit into the electronic density while preserving the protein structure
+through the use of low-energy normal modes.
+
+Type "density_fit" without arguments to get a short description of how to
+use this program.
+
+
+INSTALLATION
+------------
+
+Prerequisites:
+
+- Python 2.2 or higher
+- Numerical Python 20.0 or higher
+- netCDF 3.4 or higher
+- ScientificPython 2.4 or higher
+- MMTK 2.4 or higher
+
+To install this package, type (in this directory)
+
+   python setup.py build
+   python setup.py install
+
+The second command may require root privileges on Unix systems. Alternatively,
+users can install the package in their private directory. For more information
+about installation options, type
+
+   python setup.py --help install
+
+Users of RPM-based Linux distributions can build RPM files (source and binary)
+by typing
+
+   python setup.py bdist_rpm

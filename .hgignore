@@ -1,0 +1,13 @@
+syntax: glob
+
+*~
+**.pyc
+**.pyo
+build
+dist
+Test
+MANIFEST
+HG_CHANGESET_ID
+1
+PKG-INFO
+

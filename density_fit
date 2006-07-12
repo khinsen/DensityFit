@@ -1,0 +1,186 @@
+#!python
+
+# Flexible fitting of a protein structure into a low-resolution
+# electronic density using normal modes.
+#
+# Written by Konrad Hinsen <hinsen@llb.saclay.cea.fr>
+#
+
+import os, sys
+
+usage = """Usage:
+
+density_fit prepare <ezd file> [<clip_low> <clip_high>]
+    Reads an electronic density map from an ezd file and writes
+    it in the format that the other operations require. Optionally,
+    sets regions in the density map to zero that are too small to
+    be considered real data (<clip_low>) or too high to be considered
+    protein data (<clip_high>). The clip values are real numbers
+    between 0. and 1. Setting <clip_low> to 0. disables clipping of
+    small values. Setting <clip_high> to any value larger than 1.
+    disables clipping of high values.
+
+density_fit view <pdb_file> <map_file>
+    Runs VMD to show the structure in <pdb_file> and the electronic
+    density map in <map_file>
+
+density_fit write_xplor <map_file>
+    Write the electronic density in <map_file>  to a file in
+    (formatted) X-Plor format.
+
+density_fit orientation <pdb_file> <map_file>
+    Determines good initial orientations for the fitting procedure.
+    Usually the first file (best fit) is the optimal starting point,
+    but if several orientations yield similar fit qualities, a manual
+    selection is preferable.
+
+density_fit fit <pdb_file> <map_file> <energy_cutoff> [<trajectory_output>]
+    Deforms the structure in <pdb_file> to fit into the electronic
+    density given by <map_file>. <pdb_file> is the output of the
+    orientation step. <energy_cutoff> (a real number larger than one)
+    defines the number of modes to be used: all modes whose energy is
+    below <energy_cutoff> times the energy of the first non-zero mode.
+    If the optional integer argument <trajectory_output> is given, a
+    sequence of configurations is written to an MMTK trajectory file.
+    The argument specifies the number of fit steps between two
+    trajectory writes. A value of 0 (the default) means that no
+    trajectory is written.
+
+density_fit atomic_coordinates <pdb_file> <atomic_pdb_file>
+    Takes a C-alpha structure (usually the result of the fitting
+    step) in <pdb_file> and extends it into an all-atom structure
+    using information from <atomic_pdb_file>, which must be an
+    all-atom structure for the same protein in a different conformation.
+
+The names of the output files are generated automatically. They are
+printed on the terminal during the calculations.
+"""
+
+def fileCheck(files):
+    for file in files:
+        if not os.path.exists(file):
+            sys.stderr.write(file + " not found\n")
+            raise SystemExit
+
+
+def prepareDensity(args):
+    try:
+        ezd_file = args[0]
+    except IndexError:
+        sys.stderr.write(usage)
+        raise SystemExit
+    if len(args) > 1:
+        try:
+            clip_low, clip_high = args[1:]
+            clip_low_n = float(clip_low)
+            clip_high_n = float(clip_high)
+        except IndexError, ValueError:
+            sys.stderr.write(usage)
+            raise SystemExit
+        label = os.path.splitext(ezd_file)[0] \
+                + '_' + clip_low + '_' + clip_high 
+    else:
+        clip_low_n = 0.
+        clip_high_n = 1.1
+        label = os.path.splitext(ezd_file)[0]
+    fileCheck([ezd_file])
+
+    from DensityFit.DensityMap import DensityMap
+    from MMTK import save
+    dmap = DensityMap(ezd_file)
+    dmap.center()
+    dmap.clipBelow(clip_low_n)
+    dmap.clipAbove(clip_high_n)
+    print "Writing density map to ", label + '.map'
+    save(dmap, label + '.map')
+
+def view(args):
+    try:
+        pdb_file, map_file = args
+    except ValueError:
+        sys.stderr.write(usage)
+        raise SystemExit
+    fileCheck([pdb_file, map_file])
+
+    from MMTK import load
+    map = load(map_file)
+    map.viewVMD(pdb_filename=pdb_file)
+
+def writeXPlor(args):
+    try:
+        map_file = args[0]
+    except IndexError:
+        sys.stderr.write(usage)
+        raise SystemExit
+    fileCheck([map_file])
+    xplor_name = os.path.splitext(map_file)[0] + '.xplor'
+
+    from MMTK import load
+    map = load(map_file)
+    print "Writing file ", xplor_name
+    map.writeXPlor(xplor_name)
+
+def orientation(args):
+    try:
+        pdb_file, map_file = args
+    except ValueError:
+        sys.stderr.write(usage)
+        raise SystemExit
+    fileCheck([pdb_file, map_file])
+    label = os.path.splitext(pdb_file)[0] + '_' + os.path.splitext(map_file)[0]
+
+    from DensityFit.Orientation import initialOrientation
+    initialOrientation(pdb_file, map_file, label+'_orientation')
+
+def fit(args):
+    try:
+        pdb_file, map_file, cutoff = args[:3]
+        cutoff = float(cutoff)
+    except ValueError:
+        sys.stderr.write(usage)
+        raise SystemExit
+    if len(args) > 3:
+        try:
+            trajectory_freq = int(args[3])
+        except ValueError:
+            sys.stderr.write(usage)
+            raise SystemExit
+    else:
+        trajectory_freq = 0
+    fileCheck([pdb_file, map_file])
+    label = os.path.splitext(pdb_file)[0]
+    label_parts = label.split('_')
+    label_parts = [s for s in label_parts if s[:11] != 'orientation']
+    label = '_'.join(label_parts)
+
+    from DensityFit.Fit import fit
+    fit(pdb_file, map_file, cutoff, label, trajectory_freq)
+
+def atomicCoordinates(args):
+    try:
+        pdb_file, atomic_pdb_file = args
+    except ValueError:
+        sys.stderr.write(usage)
+        raise SystemExit
+    fileCheck([pdb_file, atomic_pdb_file])
+    pdb_out = os.path.splitext(pdb_file)[0] + '_all_atom.pdb'
+
+    from DensityFit.AtomicReconstruction import atomicReconstruction
+    atomicReconstruction(pdb_file, atomic_pdb_file, pdb_out)
+
+
+commands = {'prepare': prepareDensity,
+            'view': view,
+            'write_xplor': writeXPlor,
+            'orientation': orientation,
+            'fit': fit,
+            'atomic_coordinates': atomicCoordinates}
+
+try:
+    command = commands[sys.argv[1]]
+    args = sys.argv[2:]
+except (IndexError, KeyError):
+    sys.stderr.write(usage)
+    raise SystemExit
+
+command(args)
