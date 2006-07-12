@@ -8,7 +8,19 @@ import os, string, tempfile
 class DensityMap:
 
     def __init__(self, filename):
+        if filename is None:
+            return
+        filetype = os.path.splitext(filename)[1]
+        if filetype.lower() == '.ezd':
+            self.readEZD(filename)
+        elif filetype.lower() == '.ccp4':
+            self.readCCP4(filename)
+        else:
+            raise ValueError("Unknown file type %s" % filetype)
+        self.map = None
+        self.normalize()
 
+    def readEZD(filename):
         file = open(filename)
         while 1:
             line = file.readline()
@@ -45,9 +57,63 @@ class DensityMap:
         self.x_axis = N.arange(self.nx)*(cell_x/gnx)*Units.Ang
         self.y_axis = N.arange(self.ny)*(cell_y/gny)*Units.Ang
         self.z_axis = N.arange(self.nz)*(cell_z/gnz)*Units.Ang
-        self.map = None
-        self.normalize()
-    
+
+    def readCCP4(self, filename):
+        mapfile = file(filename)
+        header_data = mapfile.read(1024)
+        NC, NR, NS, MODE, NCSTART, NRSTART, NSSTART, NX, NY, NZ, X, Y, Z, \
+            ALPHA, BETA, GAMMA, MAPC, MAPR, MAPS, AMIN, AMAX, AMEAN, \
+            ISPG, NSYMBT, LSKFLG = struct.unpack('=10l6f3l3f3l',
+                                                 header_data[:4*25])
+        if MODE == 2:
+            byte_order = '='
+        elif MODE == 33554432:
+            NC, NR, NS, MODE, NCSTART, NRSTART, NSSTART, NX, NY, NZ, X, Y, Z, \
+                ALPHA, BETA, GAMMA, MAPC, MAPR, MAPS, AMIN, AMAX, AMEAN, \
+                ISPG, NSYMBT, LSKFLG = struct.unpack('>10l6f3l3f3l',
+                                                     header_data[:4*25])
+            byte_order = '>'
+            if MODE == 33554432:
+                NC, NR, NS, MODE, NCSTART, NRSTART, NSSTART, NX, NY, NZ, \
+                    X, Y, Z, ALPHA, BETA, GAMMA, MAPC, MAPR, MAPS, \
+                    AMIN, AMAX, AMEAN, ISPG, NSYMBT, LSKFLG \
+                    = struct.unpack('<10l6f3l3f3l', header_data[:4*25])
+                byte_order = '<'
+
+        else:
+            raise IOError("Not a mode 2 CCP4 map file")
+
+        symmetry_data = mapfile.read(NSYMBT)
+        map_data = mapfile.read(4*NS*NR*NC)
+
+        if byte_order == '=':
+            array = N.fromstring(map_data, N.Float32, NC*NR*NS)
+        else:
+            array = N.zeros((NS*NR*NC,), N.Float32)
+            index = 0
+            while len(map_data) >= 4*10000:
+                values = struct.unpack(byte_order + '10000f',
+                                       map_data[:4*10000])
+                array[index:index+10000] = N.array(values, N.Float32)
+                index += 10000
+                map_data = map_data[4*10000:]
+            values = struct.unpack(byte_order + '%df' % (len(map_data)/4),
+                                   map_data)
+            array[index:] = N.array(values, N.Float32)
+
+        del map_data
+
+        array.shape = (NS, NR, NC)
+        self.data = N.transpose(array)
+
+        resolution_x = X*Units.Ang/NX
+        resolution_y = Y*Units.Ang/NY
+        resolution_z = Z*Units.Ang/NZ
+
+        self.x_axis = (NCSTART+N.arange(NC))*resolution_x
+        self.y_axis = (NRSTART+N.arange(NR))*resolution_y
+        self.z_axis = (NSSTART+N.arange(NS))*resolution_z
+
     def normalize(self):
         self.data /= N.sum(N.ravel(self.data))
         
