@@ -1,4 +1,5 @@
 from MMTK import *
+from MMTK.Geometry import Box
 from Scientific.Functions.Interpolation import InterpolatingFunction
 from Scientific.indexing import index_expression
 import Numeric as N
@@ -18,6 +19,8 @@ class DensityMap:
         else:
             raise ValueError("Unknown file type %s" % filetype)
         self.map = None
+        self.box = Box(Vector(self.x_axis[0],self.y_axis[0],self.z_axis[0]),
+                       Vector(self.x_axis[-1],self.y_axis[-1],self.z_axis[-1]))
         self.normalize()
 
     def readEZD(filename):
@@ -114,6 +117,25 @@ class DensityMap:
         self.y_axis = (NRSTART+N.arange(NR))*resolution_y
         self.z_axis = (NSSTART+N.arange(NS))*resolution_z
 
+    def __getitem__(self, item):
+        if not isinstance(item, tuple) or len(item) != 3:
+            raise ValueError("indexation requires three slices")
+        sx, sy, sz = item
+        if not (isinstance(sx, slice) and isinstance(sy, slice) \
+                and isinstance(sz, slice)):
+            raise ValueError("indexation requires three slices")
+        new_map = DensityMap(None)
+        new_map.data = self.data[sx, sy, sz]
+        new_map.x_axis = self.x_axis[sx]
+        new_map.y_axis = self.y_axis[sy]
+        new_map.z_axis = self.z_axis[sz]
+        new_map.map = None
+        new_map.box = Box(Vector(new_map.x_axis[0], new_map.y_axis[0],
+                                 new_map.z_axis[0]),
+                          Vector(new_map.x_axis[-1], new_map.y_axis[-1],
+                                 new_map.z_axis[-1]))
+        return new_map
+
     def normalize(self):
         self.data /= N.sum(N.ravel(self.data))
         
@@ -142,6 +164,8 @@ class DensityMap:
         self.x_axis = self.x_axis - x_center
         self.y_axis = self.y_axis - y_center
         self.z_axis = self.z_axis - z_center
+        self.box = Box(Vector(self.x_axis[0],self.y_axis[0],self.z_axis[0]),
+                       Vector(self.x_axis[-1],self.y_axis[-1],self.z_axis[-1]))
 
     def principalAxes(self):
         r = self._rGrid()

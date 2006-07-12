@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup (name = "DensityFit",
-       version = "0.1.3",
+       version = "0.1.4",
        description = "Flexible fit of protein structures into low-resolution electronic density maps",
        long_description =
 """This program takes as input a low-resolution electronic density map
@@ -13,9 +13,9 @@ to fit into the electronic density while preserving the protein structure
 through the use of low-energy normal modes.
 """,
        author = "K. Hinsen",
-       author_email = "hinsen@llb.saclay.cea.fr",
+       author_email = "hinsencnrs-orleans.fr",
        url = "http://dirac.cnrs-orleans.fr/",
-       license = "GPL",
+       license = "CeCILL",
        packages = ['DensityFit'],
        scripts = ['density_fit'],
        )
