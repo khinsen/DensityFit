@@ -1,9 +1,9 @@
 from MMTK import *
 from Scientific.Functions.Interpolation import InterpolatingFunction
 from Scientific.indexing import index_expression
-import Numeric; N = Numeric
+import Numeric as N
 from LinearAlgebra import eigenvectors
-import os, string, tempfile
+import os, string, struct, tempfile
 
 class DensityMap:
 
@@ -117,6 +117,12 @@ class DensityMap:
     def normalize(self):
         self.data /= N.sum(N.ravel(self.data))
         
+    def makePositive(self):
+        min = N.minimum.reduce(N.ravel(self.data))
+        if min < 0:
+            nonzero_mask = self.data != 0
+            self.data = (self.data - min)*nonzero_mask
+
     def _makeMapObjects(self):
         if self.map is None:
             self.map = InterpolatingFunction((self.x_axis, self.y_axis,
