@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup (name = "DensityFit",
-       version = "0.1.4",
+       version = "1.0",
        description = "Flexible fit of protein structures into low-resolution electronic density maps",
        long_description =
 """This program takes as input a low-resolution electronic density map

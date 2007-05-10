@@ -7,6 +7,15 @@ through the use of low-energy normal modes.
 Type "density_fit" without arguments to get a short description of how to
 use this program.
 
+The algorithm used in this program is described in
+
+  K Hinsen, N Reuter, J Navaza, D L Stokes, and J J Lacapere
+  Normal mode based fitting of atomic structure into electron density maps:
+       application to SR Ca-ATPase
+  Biophys. J. 88:818-827 (2005)
+
+Please cite this article in your publications that make use of this program.
+
 
 INSTALLATION
 ------------
