@@ -221,6 +221,10 @@ class DensityMap:
         atom_map = N.zeros(self.data.shape, N.Float)
         cutoff = 4.*r0
         for a in object.atomList():
+            # An over-eager optimization: it should use
+            # an enlarged box
+            #if not self.box.enclosesPoint(a.position()):
+            #    continue
             ra = a.position().array
             xi1 = N.sum(self.x_axis < ra[0]-cutoff)
             xi2 = N.sum(self.x_axis < ra[0]+cutoff)
