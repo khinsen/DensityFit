@@ -1,6 +1,6 @@
 # Find a good initial orientation of a protein wrt a density map
 #
-# Written by Konrad Hinsen <hinsen@llb.saclay.cea.fr>
+# Written by Konrad Hinsen <hinsen@cnrs-orleans.fr>
 #
 
 from MMTK import *

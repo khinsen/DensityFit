@@ -3,15 +3,15 @@
 # Flexible fitting of a protein structure into a low-resolution
 # electronic density using normal modes.
 #
-# Written by Konrad Hinsen <hinsen@llb.saclay.cea.fr>
+# Written by Konrad Hinsen <hinsen@cnrs-orleans.fr>
 #
 
 import os, sys
 
 usage = """Usage:
 
-density_fit prepare <ezd file> [<clip_low> <clip_high>]
-    Reads an electronic density map from an ezd file and writes
+density_fit prepare <input_map_file> [<clip_low> <clip_high>]
+    Reads an electronic density map from an EZD or CCP4 file and writes
     it in the format that the other operations require. Optionally,
     sets regions in the density map to zero that are too small to
     be considered real data (<clip_low>) or too high to be considered
@@ -65,7 +65,7 @@ def fileCheck(files):
 
 def prepareDensity(args):
     try:
-        ezd_file = args[0]
+        input_map_file = args[0]
     except IndexError:
         sys.stderr.write(usage)
         raise SystemExit
@@ -77,17 +77,17 @@ def prepareDensity(args):
         except IndexError, ValueError:
             sys.stderr.write(usage)
             raise SystemExit
-        label = os.path.splitext(ezd_file)[0] \
+        label = os.path.splitext(input_map_file)[0] \
                 + '_' + clip_low + '_' + clip_high 
     else:
         clip_low_n = 0.
         clip_high_n = 1.1
-        label = os.path.splitext(ezd_file)[0]
-    fileCheck([ezd_file])
+        label = os.path.splitext(input_map_file)[0]
+    fileCheck([input_map_file])
 
     from DensityFit.DensityMap import DensityMap
     from MMTK import save
-    dmap = DensityMap(ezd_file)
+    dmap = DensityMap(input_map_file)
     dmap.center()
     dmap.clipBelow(clip_low_n)
     dmap.clipAbove(clip_high_n)

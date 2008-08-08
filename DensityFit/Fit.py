@@ -1,6 +1,6 @@
 # Fit protein structure flexibly into density map.
 #
-# Written by Konrad Hinsen <hinsen@llb.saclay.cea.fr>
+# Written by Konrad Hinsen <hinsen@cnrs-orleans.fr>
 #
 
 from MMTK import *
